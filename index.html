@@ -45,6 +45,7 @@
 const URL='https://kwpiqtujvjntvriyjnlk.supabase.co';
 const KEY='sb_publishable_na7d6Lp0-41tvcTtTOAIHQ_-zxOt9b0';
 const ORG='2bcc0508-0ce6-43f3-8352-0fcdfb3e23c7';
+if(!window.supabase||!window.supabase.createClient){document.getElementById('loginMsg').textContent='The secure sign-in service did not load. Refresh the page or try another network.';throw new Error('Supabase client library failed to load');}
 const db=window.supabase.createClient(URL,KEY);
 const el=function(id){return document.getElementById(id)};
 let role='';let records=[];let recoveryMode=false;
@@ -52,9 +53,12 @@ function showRecovery(){recoveryMode=true;el('app').classList.add('hidden');el('
 function message(id,text,isError){el(id).textContent=text;el(id).style.color=isError?'#a43b31':'#28754b'}
 async function enter(user){
 if(recoveryMode)return;
+try{
 const membership=await db.from('memberships').select('role,organization_id').eq('user_id',user.id).eq('organization_id',ORG).maybeSingle();
-if(membership.error||!membership.data){message('loginMsg','This account is not a member of HIND OPTICAL CO.',true);await db.auth.signOut();return}
-role=membership.data.role;el('login').classList.add('hidden');el('app').classList.remove('hidden');el('userArea').textContent=user.email+' · '+role;await load();
+if(membership.error){message('loginMsg','Signed in, but workspace access check failed: '+membership.error.message,true);return}
+if(!membership.data){message('loginMsg','This account is not a member of HIND OPTICAL CO. Ask the owner to add it as an employee.',true);await db.auth.signOut();return}
+role=membership.data.role;el('login').classList.add('hidden');el('app').classList.remove('hidden');el('userArea').textContent=user.email+' · '+role;await load();await loadInvoices();if(!invoiceLines.children.length)addLine();
+}catch(e){message('loginMsg','Sign-in completed but the workspace could not open: '+(e.message||e),true)}
 }
 async function load(){
 const result=await db.from('products').select('*').eq('organization_id',ORG).order('name');
@@ -67,7 +71,7 @@ const q=el('search').value.toLowerCase();
 const list=records.filter(function(p){return [p.name,p.sku,p.size,p.colour].join(' ').toLowerCase().includes(q)});
 el('rows').innerHTML=list.length?list.map(function(p){return '<tr><td>'+safe(p.name)+'</td><td>'+safe(p.sku)+'</td><td>'+safe(p.size)+'</td><td>'+safe(p.colour)+'</td><td>'+safe(p.quantity||0)+'</td><td>'+safe(p.purchase_cost||0)+'</td><td>'+safe(p.selling_price||0)+'</td><td>'+safe(p.gst_rate||0)+'</td></tr>'}).join(''):'<tr><td colspan="8">No products found.</td></tr>';
 }
-el('signIn').onclick=async function(){message('loginMsg','Signing in…',false);const r=await db.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});if(r.error){message('loginMsg',r.error.message,true)}else{await enter(r.data.user)}};
+el('signIn').onclick=async function(){const b=el('signIn');b.disabled=true;message('loginMsg','Connecting securely…',false);try{const email=el('email').value.trim(),password=el('password').value;if(!email||!password){message('loginMsg','Enter both your email and password.',true);return}const r=await db.auth.signInWithPassword({email,password});if(r.error){message('loginMsg',r.error.message,true);return}await enter(r.data.user)}catch(e){message('loginMsg','Could not connect: '+(e.message||String(e)),true)}finally{b.disabled=false}};
 el('forgot').onclick=async function(){
  const email=el('email').value.trim();
  if(!email){message('loginMsg','Enter your account email first.',true);return}
