@@ -27,9 +27,11 @@ const KEY='sb_publishable_na7d6Lp0-41tvcTtTOAIHQ_-zxOt9b0';
 const ORG='2bcc0508-0ce6-43f3-8352-0fcdfb3e23c7';
 const db=window.supabase.createClient(URL,KEY);
 const el=function(id){return document.getElementById(id)};
-let role='';let records=[];
+let role='';let records=[];let recoveryMode=false;
+function showRecovery(){recoveryMode=true;el('app').classList.add('hidden');el('login').classList.remove('hidden');el('resetPanel').classList.remove('hidden');el('email').disabled=true;el('password').classList.add('hidden');el('signIn').classList.add('hidden');el('forgot').classList.add('hidden');message('loginMsg','Choose a new password below.',false)}
 function message(id,text,isError){el(id).textContent=text;el(id).style.color=isError?'#a43b31':'#28754b'}
 async function enter(user){
+if(recoveryMode)return;
 const membership=await db.from('memberships').select('role,organization_id').eq('user_id',user.id).eq('organization_id',ORG).maybeSingle();
 if(membership.error||!membership.data){message('loginMsg','This account is not a member of HIND OPTICAL CO.',true);await db.auth.signOut();return}
 role=membership.data.role;el('login').classList.add('hidden');el('app').classList.remove('hidden');el('userArea').textContent=user.email+' · '+role;await load();
@@ -61,9 +63,9 @@ el('savePassword').onclick=async function(){
  if(r.error){message('loginMsg',r.error.message,true);return}
  el('newPassword').value='';el('resetPanel').classList.add('hidden');message('loginMsg','Password updated. You can now sign in with your new password.',false);await db.auth.signOut();
 };
-db.auth.onAuthStateChange(async function(event,session){
- if(event==='PASSWORD_RECOVERY'){el('app').classList.add('hidden');el('login').classList.remove('hidden');el('resetPanel').classList.remove('hidden');el('email').disabled=true;el('password').classList.add('hidden');el('signIn').classList.add('hidden');el('forgot').classList.add('hidden');message('loginMsg','Password reset verified. Enter your new password below.',false)}
- if(event==='SIGNED_OUT'){el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''}
+db.auth.onAuthStateChange(function(event,session){
+ if(event==='PASSWORD_RECOVERY'){showRecovery()}
+ if(event==='SIGNED_OUT'){recoveryMode=false;el('resetPanel').classList.add('hidden');el('email').disabled=false;el('password').classList.remove('hidden');el('signIn').classList.remove('hidden');el('forgot').classList.remove('hidden');el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''}
 });
 el('add').onclick=async function(){
 const name=el('pname').value.trim();if(!name){message('addMsg','Product name is required.',true);return}
@@ -72,7 +74,8 @@ const r=await db.from('products').insert(data);if(r.error){message('addMsg',r.er
 ['pname','psku','psize','pcolour','pqty','pcost','pprice','pgst'].forEach(function(id){el(id).value=''});message('addMsg','Product saved to the shared cloud database.',false);await load();
 };
 el('search').oninput=draw;el('refresh').onclick=load;el('logout').onclick=async function(){await db.auth.signOut();el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''};
-db.auth.getSession().then(function(r){if(r.data.session)enter(r.data.session.user)});
-db.auth.onAuthStateChange(function(event,session){if(event==='SIGNED_OUT'){el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''}});
+if(new URLSearchParams(window.location.hash.slice(1)).get('type')==='recovery'||new URLSearchParams(window.location.search).get('type')==='recovery'){showRecovery()}
+db.auth.getSession().then(function(r){if(r.data.session&&!recoveryMode)enter(r.data.session.user)});
+
 })();
 </script></body></html>
