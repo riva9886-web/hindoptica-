@@ -4,7 +4,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{font-family:Inter,system-ui,Arial;color:#182632;background:#f4f6f7}*{box-sizing:border-box}body{margin:0}header{background:#172b3a;color:white;padding:20px 5%;display:flex;justify-content:space-between;align-items:center}header small{display:block;color:#c4d0d7;letter-spacing:.15em;margin-top:4px}.wrap{max-width:1100px;margin:30px auto;padding:0 18px}.card{background:white;border:1px solid #e1e7ea;border-radius:14px;padding:22px;margin:15px 0;box-shadow:0 5px 20px #10203008}.login{max-width:420px;margin:9vh auto}h1,h2,p{margin-top:0}label{display:block;font-size:12px;color:#61717c;margin:12px 0 5px}input{width:100%;padding:11px;border:1px solid #d5dde2;border-radius:8px;font:inherit}button{border:0;border-radius:8px;padding:10px 14px;background:#e8eef1;cursor:pointer;font:inherit}button.primary{background:#172b3a;color:white}button:disabled{opacity:.5}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:11px;border-bottom:1px solid #e7ecef}th{font-size:11px;color:#657580;text-transform:uppercase}.scroll{overflow:auto}.muted{color:#697984}.status{font-size:13px;margin-top:10px}.hidden{display:none!important}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row input{max-width:230px}.pill{background:#eaf2ee;color:#286443;border-radius:30px;padding:5px 10px;font-size:12px}
-</style></head><body>
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.field{min-width:0}.field input,.field select{width:100%;padding:10px;border:1px solid #d5dde2;border-radius:8px;font:inherit;background:white}.field label{margin-top:0}.invoice-line{display:grid;grid-template-columns:2fr .7fr 1fr .8fr .8fr .8fr auto;gap:8px;align-items:end;padding:12px 0;border-bottom:1px solid #e7ecef}.invoice-line select,.invoice-line input{width:100%;padding:9px;border:1px solid #d5dde2;border-radius:8px;min-width:0}.totals{margin-left:auto;max-width:320px}.totals div{display:flex;justify-content:space-between;padding:5px 0}.notice{background:#fff8e8;border:1px solid #f1dfb7;padding:12px;border-radius:8px;font-size:13px}@media(max-width:760px){.invoice-line{grid-template-columns:1fr 1fr}.invoice-line .wide{grid-column:span 2}}</style></head><body>
 <header><div><b>HIND OPTICAL CO.</b><small>CLOUD BUSINESS DESK</small></div><div id="userArea"></div></header>
 <main class="wrap">
 <section id="login" class="card login"><h2>Welcome back</h2><p class="muted">Sign in to access your shared business workspace.</p>
@@ -17,7 +17,27 @@
 <p class="muted" style="font-size:12px">Use the account already registered for HIND OPTICAL CO. Do not share your password.</p></section>
 <section id="app" class="hidden"><div class="card"><div class="row"><h2 style="margin:0">Inventory</h2><span class="pill">Cloud connected</span></div><p class="muted">Products are stored in your shared Supabase database.</p><div class="row"><input id="search" placeholder="Search products" style="flex:1"><button id="refresh">Refresh</button><button id="logout">Sign out</button></div></div>
 <div class="card"><h2>Add a product</h2><div class="row"><input id="pname" placeholder="Product name"><input id="psku" placeholder="SKU"><input id="psize" placeholder="Size"><input id="pcolour" placeholder="Colour"><input id="pqty" type="number" placeholder="Quantity"></div><div class="row" style="margin-top:12px"><input id="pcost" type="number" placeholder="Purchase cost ₹"><input id="pprice" type="number" placeholder="Selling price ₹"><input id="pgst" type="number" placeholder="GST %"><button class="primary" id="add">Save product</button></div><p id="addMsg" class="status"></p></div>
-<div class="card"><h2>Product master</h2><div class="scroll"><table><thead><tr><th>Product</th><th>SKU</th><th>Size</th><th>Colour</th><th>Qty</th><th>Cost ₹</th><th>Price ₹</th><th>GST %</th></tr></thead><tbody id="rows"><tr><td colspan="8">Loading…</td></tr></tbody></table></div></div>
+<div class="card" id="billingCard"><h2>Create invoice</h2>
+<p class="muted">Add items, choose GST treatment for each item, and save the invoice.</p>
+<div class="grid2">
+<div class="field"><label>Customer type</label><select id="customerType"><option value="walkin">Walk-in customer</option><option value="wholesale">Wholesale customer</option></select></div>
+<div class="field"><label>Customer name</label><input id="customerName" placeholder="Customer / company name"></div>
+<div class="field"><label>Customer GSTIN (if applicable)</label><input id="customerGstin" placeholder="GSTIN"></div>
+<div class="field"><label>Phone</label><input id="customerPhone" placeholder="Phone number"></div>
+<div class="field"><label>Email</label><input id="customerEmail" type="email" placeholder="Email"></div>
+<div class="field"><label>Address</label><input id="customerAddress" placeholder="Address"></div>
+<div class="field"><label>Purchase category</label><select id="purchaseCategory"><option value="">Select</option><option>Glasses</option><option>Lens</option><option>Contact lens</option><option>Other</option></select></div>
+<div class="field"><label>Purchase details</label><input id="purchaseDetails" placeholder="Optional details"></div>
+</div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:22px"><b>Invoice items</b><button id="addInvoiceLine" type="button">+ Add item</button></div>
+<div id="invoiceLines"></div>
+<div class="totals" id="invoiceTotals"><div><span>Taxable subtotal</span><b id="sumSubtotal">₹0.00</b></div><div><span>Item discounts</span><b id="sumDiscount">₹0.00</b></div><div><span>GST</span><b id="sumGst">₹0.00</b></div><div style="border-top:1px solid #dce3e7;margin-top:6px"><strong>Total</strong><strong id="sumTotal">₹0.00</strong></div></div>
+<div class="grid2" style="margin-top:16px"><div class="field"><label>Overall discount (₹)</label><input id="overallDiscount" type="number" min="0" step="0.01" value="0"></div><div class="field"><label>Advance received (₹)</label><input id="advancePaid" type="number" min="0" step="0.01" value="0"></div></div>
+<p class="muted" id="balancePreview">Balance due: ₹0.00</p>
+<div class="notice">GST inclusive means the entered rate already contains GST. GST exclusive means GST is added to the entered rate. Please verify GST rates and invoice treatment with your accountant before issuing tax invoices.</div>
+<button class="primary" id="saveInvoice" style="margin-top:16px">Save invoice</button><p id="invoiceMsg" class="status"></p>
+</div>
+<div class="card"><h2>Recent invoices</h2><div class="scroll"><table><thead><tr><th>Invoice</th><th>Date</th><th>Customer</th><th>Type</th><th>Total ₹</th><th>Balance ₹</th></tr></thead><tbody id="invoiceRows"><tr><td colspan="6">Loading…</td></tr></tbody></table></div></div>\n<div class="card"><h2>Product master</h2><div class="scroll"><table><thead><tr><th>Product</th><th>SKU</th><th>Size</th><th>Colour</th><th>Qty</th><th>Cost ₹</th><th>Price ₹</th><th>GST %</th></tr></thead><tbody id="rows"><tr><td colspan="8">Loading…</td></tr></tbody></table></div></div>
 <div class="card"><b>Important:</b> This is an initial cloud setup, not yet a live billing system. Invoice creation, stock movement history, barcode workflows, employee setup and Tally import still need to be completed and tested before business use.</div></section>
 </main>
 <script>
@@ -39,7 +59,7 @@ role=membership.data.role;el('login').classList.add('hidden');el('app').classLis
 async function load(){
 const result=await db.from('products').select('*').eq('organization_id',ORG).order('name');
 if(result.error){el('rows').innerHTML='<tr><td colspan="8">Could not load products: '+safe(result.error.message)+'</td></tr>';return}
-records=result.data||[];draw();
+records=result.data||[];draw();if(el('invoiceLines')){invoiceLines.querySelectorAll('.li-product').forEach(s=>{const keep=s.value;s.innerHTML='<option value="">Choose product</option>'+records.map(p=>'<option value="'+safe(p.id)+'">'+safe(p.name)+' · '+safe(p.size||'')+' '+safe(p.colour||'')+' (stock '+safe(p.quantity||0)+')</option>').join('');s.value=keep})};
 }
 function safe(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
 function draw(){
@@ -73,7 +93,61 @@ const data={organization_id:ORG,name:name,sku:el('psku').value.trim()||null,size
 const r=await db.from('products').insert(data);if(r.error){message('addMsg',r.error.message,true);return}
 ['pname','psku','psize','pcolour','pqty','pcost','pprice','pgst'].forEach(function(id){el(id).value=''});message('addMsg','Product saved to the shared cloud database.',false);await load();
 };
-el('search').oninput=draw;el('refresh').onclick=load;el('logout').onclick=async function(){await db.auth.signOut();el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''};
+
+const invoiceLines=el('invoiceLines');
+function money(n){return '₹'+Number(n||0).toFixed(2)}
+function addLine(){
+ const row=document.createElement('div');row.className='invoice-line';
+ const opts='<option value="">Choose product</option>'+records.map(p=>'<option value="'+safe(p.id)+'">'+safe(p.name)+' · '+safe(p.size||'')+' '+safe(p.colour||'')+' (stock '+safe(p.quantity||0)+')</option>').join('');
+ row.innerHTML='<div class="wide"><label>Product</label><select class="li-product">'+opts+'</select></div><div><label>Qty</label><input class="li-qty" type="number" min="0.001" step="0.001" value="1"></div><div><label>Rate ₹</label><input class="li-rate" type="number" min="0" step="0.01" value="0"></div><div><label>GST %</label><input class="li-gst" type="number" min="0" step="0.01" value="0"></div><div><label>GST mode</label><select class="li-mode"><option value="exclusive">Add GST</option><option value="inclusive">GST included</option></select></div><div><label>Discount %</label><input class="li-discount" type="number" min="0" max="100" step="0.01" value="0"></div><div><button class="li-remove" type="button">Remove</button></div>';
+ invoiceLines.appendChild(row);
+ const product=row.querySelector('.li-product');
+ product.onchange=()=>{const p=records.find(x=>x.id===product.value);if(p){row.querySelector('.li-rate').value=p.selling_price||0;row.querySelector('.li-gst').value=p.gst_rate||0;recalc()}};
+ row.querySelectorAll('input,select').forEach(x=>x.addEventListener('input',recalc));
+ row.querySelector('.li-remove').onclick=()=>{row.remove();recalc()};
+ recalc();
+}
+function calcLines(){
+ let taxable=0,discounts=0,gst=0;const items=[];
+ invoiceLines.querySelectorAll('.invoice-line').forEach(row=>{
+ const pid=row.querySelector('.li-product').value,p=records.find(x=>x.id===pid);
+ const qty=Number(row.querySelector('.li-qty').value)||0,rate=Number(row.querySelector('.li-rate').value)||0,gr=Number(row.querySelector('.li-gst').value)||0,dp=Number(row.querySelector('.li-discount').value)||0,mode=row.querySelector('.li-mode').value;
+ const gross=qty*rate,afterDiscount=gross*(1-dp/100);
+ const base=mode==='inclusive'?afterDiscount/(1+gr/100):afterDiscount;
+ const tax=mode==='inclusive'?afterDiscount-base:base*gr/100;
+ const lineTotal=base+tax;
+ taxable+=base;discounts+=gross-afterDiscount;gst+=tax;
+ if(pid||row.querySelector('.li-product').value)items.push({product_id:pid||null,product_name:p?p.name:'',quantity:qty,rate:rate,gst_rate:gr,discount_percent:dp,line_total:Number(lineTotal.toFixed(2))});
+ });
+ return {taxable,discounts,gst,items};
+}
+function recalc(){
+ const c=calcLines(),overall=Math.max(0,Number(el('overallDiscount').value)||0),total=Math.max(0,c.taxable+c.gst-overall),advance=Math.max(0,Number(el('advancePaid').value)||0);
+ el('sumSubtotal').textContent=money(c.taxable);el('sumDiscount').textContent=money(c.discounts+overall);el('sumGst').textContent=money(c.gst);el('sumTotal').textContent=money(total);el('balancePreview').textContent='Balance due: '+money(total-advance);
+ return { ...c,overall,total,advance };
+}
+async function loadInvoices(){
+ const r=await db.from('invoices').select('invoice_number,invoice_date,customer_name,customer_type,total_amount,balance_amount').eq('organization_id',ORG).order('created_at',{ascending:false}).limit(10);
+ if(r.error){el('invoiceRows').innerHTML='<tr><td colspan="6">Unable to load invoices.</td></tr>';return}
+ el('invoiceRows').innerHTML=r.data.length?r.data.map(x=>'<tr><td>'+safe(x.invoice_number)+'</td><td>'+safe(new Date(x.invoice_date).toLocaleDateString('en-IN'))+'</td><td>'+safe(x.customer_name)+'</td><td>'+safe(x.customer_type)+'</td><td>'+money(x.total_amount)+'</td><td>'+money(x.balance_amount)+'</td></tr>').join(''):'<tr><td colspan="6">No invoices yet.</td></tr>';
+}
+el('addInvoiceLine').onclick=addLine;
+el('overallDiscount').oninput=recalc;el('advancePaid').oninput=recalc;
+el('saveInvoice').onclick=async()=>{
+ const totals=recalc(),name=el('customerName').value.trim();
+ if(!name){message('invoiceMsg','Enter the customer name.',true);return}
+ if(!totals.items.length||totals.items.some(i=>!i.product_name||i.quantity<=0||i.rate<0)){message('invoiceMsg','Choose a product and check each item quantity and rate.',true);return}
+ if(totals.advance>totals.total){message('invoiceMsg','Advance cannot be greater than the invoice total.',true);return}
+ const customerType=el('customerType').value;
+ const payload={organization_id:ORG,customer_type:customerType,customer_name:name,customer_gstin:el('customerGstin').value.trim(),phone:el('customerPhone').value.trim(),email:el('customerEmail').value.trim(),address:el('customerAddress').value.trim(),purchase_category:el('purchaseCategory').value,purchase_details:el('purchaseDetails').value.trim(),subtotal:Number(totals.taxable.toFixed(2)),discount:Number((totals.discounts+totals.overall).toFixed(2)),gst_amount:Number(totals.gst.toFixed(2)),total_amount:Number(totals.total.toFixed(2)),advance_paid:Number(totals.advance.toFixed(2)),items:totals.items};
+ el('saveInvoice').disabled=true;message('invoiceMsg','Saving invoice…',false);
+ const r=await db.rpc('create_hoc_invoice',{p_invoice:payload});
+ el('saveInvoice').disabled=false;
+ if(r.error){message('invoiceMsg','Could not save: '+r.error.message,true);return}
+ message('invoiceMsg','Invoice '+r.data.invoice_number+' saved. Stock and customer records updated.',false);
+ invoiceLines.innerHTML='';['customerName','customerGstin','customerPhone','customerEmail','customerAddress','purchaseDetails'].forEach(id=>el(id).value='');el('purchaseCategory').value='';el('overallDiscount').value='0';el('advancePaid').value='0';recalc();await load();await loadInvoices();
+};
+\nel('search').oninput=draw;el('refresh').onclick=load;el('logout').onclick=async function(){await db.auth.signOut();el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''};
 if(new URLSearchParams(window.location.hash.slice(1)).get('type')==='recovery'||new URLSearchParams(window.location.search).get('type')==='recovery'){showRecovery()}
 db.auth.getSession().then(function(r){if(r.data.session&&!recoveryMode)enter(r.data.session.user)});
 
