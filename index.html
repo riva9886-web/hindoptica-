@@ -147,7 +147,8 @@ el('saveInvoice').onclick=async()=>{
  message('invoiceMsg','Invoice '+r.data.invoice_number+' saved. Stock and customer records updated.',false);
  invoiceLines.innerHTML='';['customerName','customerGstin','customerPhone','customerEmail','customerAddress','purchaseDetails'].forEach(id=>el(id).value='');el('purchaseCategory').value='';el('overallDiscount').value='0';el('advancePaid').value='0';recalc();await load();await loadInvoices();
 };
-\nel('search').oninput=draw;el('refresh').onclick=load;el('logout').onclick=async function(){await db.auth.signOut();el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''};
+
+el('search').oninput=draw;el('refresh').onclick=load;el('logout').onclick=async function(){await db.auth.signOut();el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''};
 if(new URLSearchParams(window.location.hash.slice(1)).get('type')==='recovery'||new URLSearchParams(window.location.search).get('type')==='recovery'){showRecovery()}
 db.auth.getSession().then(function(r){if(r.data.session&&!recoveryMode)enter(r.data.session.user)});
 
