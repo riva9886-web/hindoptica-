@@ -62,7 +62,7 @@ el('savePassword').onclick=async function(){
  el('newPassword').value='';el('resetPanel').classList.add('hidden');message('loginMsg','Password updated. You can now sign in with your new password.',false);await db.auth.signOut();
 };
 db.auth.onAuthStateChange(async function(event,session){
- if(event==='PASSWORD_RECOVERY'){el('resetPanel').classList.remove('hidden');message('loginMsg','Choose a new password below.',false)}
+ if(event==='PASSWORD_RECOVERY'){el('app').classList.add('hidden');el('login').classList.remove('hidden');el('resetPanel').classList.remove('hidden');el('email').disabled=true;el('password').classList.add('hidden');el('signIn').classList.add('hidden');el('forgot').classList.add('hidden');message('loginMsg','Password reset verified. Enter your new password below.',false)}
  if(event==='SIGNED_OUT'){el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''}
 });
 el('add').onclick=async function(){
