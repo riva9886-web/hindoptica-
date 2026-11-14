@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HIND OPTICAL CO. | Business Desk</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{font-family:Inter,system-ui,Arial;color:#182632;background:#f4f6f7}*{box-sizing:border-box}body{margin:0}header{background:#172b3a;color:white;padding:20px 5%;display:flex;justify-content:space-between;align-items:center}header small{display:block;color:#c4d0d7;letter-spacing:.15em;margin-top:4px}.wrap{max-width:1100px;margin:30px auto;padding:0 18px}.card{background:white;border:1px solid #e1e7ea;border-radius:14px;padding:22px;margin:15px 0;box-shadow:0 5px 20px #10203008}.login{max-width:420px;margin:9vh auto}h1,h2,p{margin-top:0}label{display:block;font-size:12px;color:#61717c;margin:12px 0 5px}input{width:100%;padding:11px;border:1px solid #d5dde2;border-radius:8px;font:inherit}button{border:0;border-radius:8px;padding:10px 14px;background:#e8eef1;cursor:pointer;font:inherit}button.primary{background:#172b3a;color:white}button:disabled{opacity:.5}table{width:100%;border-collapse:collapse;min-width:650px}th,td{text-align:left;padding:11px;border-bottom:1px solid #e7ecef}th{font-size:11px;color:#657580;text-transform:uppercase}.scroll{overflow:auto}.muted{color:#697984}.status{font-size:13px;margin-top:10px}.hidden{display:none!important}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row input{max-width:230px}.pill{background:#eaf2ee;color:#286443;border-radius:30px;padding:5px 10px;font-size:12px}
+</style></head><body>
+<header><div><b>HIND OPTICAL CO.</b><small>CLOUD BUSINESS DESK</small></div><div id="userArea"></div></header>
+<main class="wrap">
+<section id="login" class="card login"><h2>Welcome back</h2><p class="muted">Sign in to access your shared business workspace.</p>
+<label>Email</label><input id="email" type="email" autocomplete="username">
+<label>Password</label><input id="password" type="password" autocomplete="current-password">
+<button class="primary" id="signIn" style="width:100%;margin-top:16px">Sign in securely</button><p id="loginMsg" class="status"></p>
+<p class="muted" style="font-size:12px">Use the account already registered for HIND OPTICAL CO. Do not share your password.</p></section>
+<section id="app" class="hidden"><div class="card"><div class="row"><h2 style="margin:0">Inventory</h2><span class="pill">Cloud connected</span></div><p class="muted">Products are stored in your shared Supabase database.</p><div class="row"><input id="search" placeholder="Search products" style="flex:1"><button id="refresh">Refresh</button><button id="logout">Sign out</button></div></div>
+<div class="card"><h2>Add a product</h2><div class="row"><input id="pname" placeholder="Product name"><input id="psku" placeholder="SKU"><input id="psize" placeholder="Size"><input id="pcolour" placeholder="Colour"><input id="pqty" type="number" placeholder="Quantity"></div><div class="row" style="margin-top:12px"><input id="pcost" type="number" placeholder="Purchase cost ₹"><input id="pprice" type="number" placeholder="Selling price ₹"><input id="pgst" type="number" placeholder="GST %"><button class="primary" id="add">Save product</button></div><p id="addMsg" class="status"></p></div>
+<div class="card"><h2>Product master</h2><div class="scroll"><table><thead><tr><th>Product</th><th>SKU</th><th>Size</th><th>Colour</th><th>Qty</th><th>Cost ₹</th><th>Price ₹</th><th>GST %</th></tr></thead><tbody id="rows"><tr><td colspan="8">Loading…</td></tr></tbody></table></div></div>
+<div class="card"><b>Important:</b> This is an initial cloud setup, not yet a live billing system. Invoice creation, stock movement history, barcode workflows, employee setup and Tally import still need to be completed and tested before business use.</div></section>
+</main>
+<script>
+(function(){
+const URL='https://kwpiqtujvjntvriyjnlk.supabase.co';
+const KEY='sb_publishable_na7d6Lp0-41tvcTtTOAIHQ_-zxOt9b0';
+const ORG='2bcc0508-0ce6-43f3-8352-0fcdfb3e23c7';
+const db=window.supabase.createClient(URL,KEY);
+const el=function(id){return document.getElementById(id)};
+let role='';let records=[];
+function message(id,text,isError){el(id).textContent=text;el(id).style.color=isError?'#a43b31':'#28754b'}
+async function enter(user){
+const membership=await db.from('memberships').select('role,organization_id').eq('user_id',user.id).eq('organization_id',ORG).maybeSingle();
+if(membership.error||!membership.data){message('loginMsg','This account is not a member of HIND OPTICAL CO.',true);await db.auth.signOut();return}
+role=membership.data.role;el('login').classList.add('hidden');el('app').classList.remove('hidden');el('userArea').textContent=user.email+' · '+role;await load();
+}
+async function load(){
+const result=await db.from('products').select('*').eq('organization_id',ORG).order('name');
+if(result.error){el('rows').innerHTML='<tr><td colspan="8">Could not load products: '+safe(result.error.message)+'</td></tr>';return}
+records=result.data||[];draw();
+}
+function safe(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function draw(){
+const q=el('search').value.toLowerCase();
+const list=records.filter(function(p){return [p.name,p.sku,p.size,p.colour].join(' ').toLowerCase().includes(q)});
+el('rows').innerHTML=list.length?list.map(function(p){return '<tr><td>'+safe(p.name)+'</td><td>'+safe(p.sku)+'</td><td>'+safe(p.size)+'</td><td>'+safe(p.colour)+'</td><td>'+safe(p.quantity||0)+'</td><td>'+safe(p.purchase_cost||0)+'</td><td>'+safe(p.selling_price||0)+'</td><td>'+safe(p.gst_rate||0)+'</td></tr>'}).join(''):'<tr><td colspan="8">No products found.</td></tr>';
+}
+el('signIn').onclick=async function(){message('loginMsg','Signing in…',false);const r=await db.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});if(r.error){message('loginMsg',r.error.message,true)}else{await enter(r.data.user)}};
+el('add').onclick=async function(){
+const name=el('pname').value.trim();if(!name){message('addMsg','Product name is required.',true);return}
+const data={organization_id:ORG,name:name,sku:el('psku').value.trim()||null,size:el('psize').value.trim()||null,colour:el('pcolour').value.trim()||null,quantity:Number(el('pqty').value)||0,purchase_cost:Number(el('pcost').value)||0,selling_price:Number(el('pprice').value)||0,gst_rate:Number(el('pgst').value)||0};
+const r=await db.from('products').insert(data);if(r.error){message('addMsg',r.error.message,true);return}
+['pname','psku','psize','pcolour','pqty','pcost','pprice','pgst'].forEach(function(id){el(id).value=''});message('addMsg','Product saved to the shared cloud database.',false);await load();
+};
+el('search').oninput=draw;el('refresh').onclick=load;el('logout').onclick=async function(){await db.auth.signOut();el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''};
+db.auth.getSession().then(function(r){if(r.data.session)enter(r.data.session.user)});
+db.auth.onAuthStateChange(function(event,session){if(event==='SIGNED_OUT'){el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''}});
+})();
+</script></body></html>
