@@ -10,7 +10,10 @@
 <section id="login" class="card login"><h2>Welcome back</h2><p class="muted">Sign in to access your shared business workspace.</p>
 <label>Email</label><input id="email" type="email" autocomplete="username">
 <label>Password</label><input id="password" type="password" autocomplete="current-password">
-<button class="primary" id="signIn" style="width:100%;margin-top:16px">Sign in securely</button><p id="loginMsg" class="status"></p>
+<button class="primary" id="signIn" style="width:100%;margin-top:16px">Sign in securely</button>
+<p><button id="forgot" type="button">Forgot password?</button></p>
+<div id="resetPanel" class="hidden"><label>New password</label><input id="newPassword" type="password" autocomplete="new-password"><button class="primary" id="savePassword" type="button" style="margin-top:10px">Save new password</button></div>
+<p id="loginMsg" class="status"></p>
 <p class="muted" style="font-size:12px">Use the account already registered for HIND OPTICAL CO. Do not share your password.</p></section>
 <section id="app" class="hidden"><div class="card"><div class="row"><h2 style="margin:0">Inventory</h2><span class="pill">Cloud connected</span></div><p class="muted">Products are stored in your shared Supabase database.</p><div class="row"><input id="search" placeholder="Search products" style="flex:1"><button id="refresh">Refresh</button><button id="logout">Sign out</button></div></div>
 <div class="card"><h2>Add a product</h2><div class="row"><input id="pname" placeholder="Product name"><input id="psku" placeholder="SKU"><input id="psize" placeholder="Size"><input id="pcolour" placeholder="Colour"><input id="pqty" type="number" placeholder="Quantity"></div><div class="row" style="margin-top:12px"><input id="pcost" type="number" placeholder="Purchase cost ₹"><input id="pprice" type="number" placeholder="Selling price ₹"><input id="pgst" type="number" placeholder="GST %"><button class="primary" id="add">Save product</button></div><p id="addMsg" class="status"></p></div>
@@ -43,6 +46,25 @@ const list=records.filter(function(p){return [p.name,p.sku,p.size,p.colour].join
 el('rows').innerHTML=list.length?list.map(function(p){return '<tr><td>'+safe(p.name)+'</td><td>'+safe(p.sku)+'</td><td>'+safe(p.size)+'</td><td>'+safe(p.colour)+'</td><td>'+safe(p.quantity||0)+'</td><td>'+safe(p.purchase_cost||0)+'</td><td>'+safe(p.selling_price||0)+'</td><td>'+safe(p.gst_rate||0)+'</td></tr>'}).join(''):'<tr><td colspan="8">No products found.</td></tr>';
 }
 el('signIn').onclick=async function(){message('loginMsg','Signing in…',false);const r=await db.auth.signInWithPassword({email:el('email').value.trim(),password:el('password').value});if(r.error){message('loginMsg',r.error.message,true)}else{await enter(r.data.user)}};
+el('forgot').onclick=async function(){
+ const email=el('email').value.trim();
+ if(!email){message('loginMsg','Enter your account email first.',true);return}
+ message('loginMsg','Sending password reset email…',false);
+ const redirectTo=window.location.origin+window.location.pathname;
+ const r=await db.auth.resetPasswordForEmail(email,{redirectTo});
+ if(r.error){message('loginMsg',r.error.message,true)}else{message('loginMsg','If this email has an account, Supabase will send a reset link. Open it on this website, then set your new password here.',false)}
+};
+el('savePassword').onclick=async function(){
+ const password=el('newPassword').value;
+ if(password.length<8){message('loginMsg','Use a password with at least 8 characters.',true);return}
+ const r=await db.auth.updateUser({password});
+ if(r.error){message('loginMsg',r.error.message,true);return}
+ el('newPassword').value='';el('resetPanel').classList.add('hidden');message('loginMsg','Password updated. You can now sign in with your new password.',false);await db.auth.signOut();
+};
+db.auth.onAuthStateChange(async function(event,session){
+ if(event==='PASSWORD_RECOVERY'){el('resetPanel').classList.remove('hidden');message('loginMsg','Choose a new password below.',false)}
+ if(event==='SIGNED_OUT'){el('app').classList.add('hidden');el('login').classList.remove('hidden');el('userArea').textContent=''}
+});
 el('add').onclick=async function(){
 const name=el('pname').value.trim();if(!name){message('addMsg','Product name is required.',true);return}
 const data={organization_id:ORG,name:name,sku:el('psku').value.trim()||null,size:el('psize').value.trim()||null,colour:el('pcolour').value.trim()||null,quantity:Number(el('pqty').value)||0,purchase_cost:Number(el('pcost').value)||0,selling_price:Number(el('pprice').value)||0,gst_rate:Number(el('pgst').value)||0};
